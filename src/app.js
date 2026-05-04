@@ -7,10 +7,37 @@ import userRoutes from './routes/user.Routes.js';
 import adminRoutes from './routes/admin.Routes.js';
 
 app.use(cookieParser())
+
+const allowedOrigins = [
+    'https://gupta-sales-frontend.vercel.app',
+    'https://gupta-sales-frontend-git-*.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:5174'
+];
+
+if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production'
-        ? ['https://*.vercel.app', process.env.FRONTEND_URL]
-        : ['http://localhost:5173', 'http://localhost:5174'],
+    origin: function(origin, callback) {
+        if (!origin || allowedOrigins.some(o => origin.startsWith(o.replace('*', '')))) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
+
+app.options('*', cors({
+    origin: function(origin, callback) {
+        if (!origin || allowedOrigins.some(o => origin.startsWith(o.replace('*', '')))) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 app.use(express.json({ limit: '15mb' }));
