@@ -2,6 +2,18 @@ import UserModel from '../models/UserModel.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+const setTokenCookie = (res, token) => {
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'None' : 'lax',
+        path: '/',
+        maxAge: 604800000 // 7 days
+    });
+};
+
 // user controller
 const registerUser = async (req,res)=>{
     try {
@@ -38,13 +50,7 @@ const registerUser = async (req,res)=>{
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 604800000 // 7 days
-        });
+        setTokenCookie(res, token);
         res.status(201).json({
             _id: user._id,
             name: user.name,
@@ -63,7 +69,7 @@ const loginUser = async (req,res)=>{
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
-        
+
         let isPasswordValid;
         try {
             isPasswordValid = await bcrypt.compare(req.body.password, user.password);
@@ -71,25 +77,19 @@ const loginUser = async (req,res)=>{
             // Fallback for plain text passwords (existing users before bcrypt)
             isPasswordValid = req.body.password === user.password;
         }
-        
+
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
-        
+
         const token = jwt.sign(
             { _id: user._id, email: user.email, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
-        
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 604800000 // 7 days
-        });
-        
+
+        setTokenCookie(res, token);
+
         res.status(200).json({
             message: 'Login successful',
             _id: user._id,
@@ -103,7 +103,12 @@ const loginUser = async (req,res)=>{
 }
 
 const logoutUser = (req,res)=>{
-    res.clearCookie('token');
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'None' : 'lax',
+        path: '/'
+    });
     res.status(200).json({ message: 'Logout successful' });
 }
 
@@ -111,16 +116,16 @@ const logoutUser = (req,res)=>{
 const registerAdmin = async (req,res)=>{
     try {
         const { adminSecret } = req.body;
-        
+
         if (adminSecret !== process.env.ADMIN_SECRET) {
             return res.status(403).json({ message: 'Invalid admin secret key' });
         }
-        
+
         const existingUser = await UserModel.find({ email: req.body.email });
         if (existingUser.length > 0) {
             return res.status(400).json({ message: 'User already exists' });
         }
-        
+
         const hashedPassword = await bcrypt.hash(req.body.password, 10);
         const user = new UserModel({
             name: req.body.name,
@@ -128,23 +133,17 @@ const registerAdmin = async (req,res)=>{
             password: hashedPassword,
             role: 'admin'
         });
-        
+
         await user.save();
-        
+
         const token = jwt.sign(
             { _id: user._id, email: user.email, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
-        
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 604800000
-        });
-        
+
+        setTokenCookie(res, token);
+
         res.status(201).json({
             _id: user._id,
             name: user.name,
@@ -159,35 +158,29 @@ const registerAdmin = async (req,res)=>{
 const loginAdmin = async (req,res)=>{
     try {
         const { adminSecret } = req.body;
-        
+
         if (adminSecret !== process.env.ADMIN_SECRET) {
             return res.status(403).json({ message: 'Invalid admin secret key' });
         }
-        
+
         const user = await UserModel.findOne({ email: req.body.email });
         if (!user) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
-        
+
         const isMatch = await bcrypt.compare(req.body.password, user.password);
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
-        
+
         const token = jwt.sign(
             { _id: user._id, email: user.email, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
-        
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 604800000
-        });
-        
+
+        setTokenCookie(res, token);
+
         res.status(200).json({
             message: 'Login successful',
             _id: user._id,
@@ -201,7 +194,12 @@ const loginAdmin = async (req,res)=>{
 }
 
 const logoutAdmin = (req, res) => {
-    res.clearCookie('token');
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'None' : 'lax',
+        path: '/'
+    });
     res.status(200).json({ message: 'Logout successful' });
 }
 
