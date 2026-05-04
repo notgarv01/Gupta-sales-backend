@@ -30,16 +30,6 @@ app.use(cors({
     credentials: true
 }));
 
-app.options('*', cors({
-    origin: function(origin, callback) {
-        if (!origin || allowedOrigins.some(o => origin.startsWith(o.replace('*', '')))) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true
-}));
 app.use(express.json({ limit: '15mb' }));
 
 app.get('/',(req,res)=>{
