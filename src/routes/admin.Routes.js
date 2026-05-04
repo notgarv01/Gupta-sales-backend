@@ -12,6 +12,8 @@ router.get('/customers', authMiddleware, adminMiddleware, adminController.getAll
 router.get('/user-orders/:userId', authMiddleware, adminMiddleware, adminController.getUserOrders);
 router.put('/orders/:orderId/status', authMiddleware, adminMiddleware, adminController.updateOrderStatus);
 router.get('/products', authMiddleware, adminMiddleware, adminController.getAllProducts);
+router.get('/products/:productId', authMiddleware, adminMiddleware, adminController.getProductById);
+router.put('/products/:productId', authMiddleware, adminMiddleware, adminController.updateProduct);
 router.post('/products', authMiddleware, adminMiddleware, adminController.addProduct);
 
 export default router;

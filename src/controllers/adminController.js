@@ -192,6 +192,57 @@ const getAllProducts = async (req, res) => {
     }
 };
 
+const getProductById = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const product = await ProductModel.findById(productId);
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        res.status(200).json(product);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const updateProduct = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const { name, price, image, type, unit, minOrderQty, piecesPerUnit, variant, brand, description, stock, oldPrice } = req.body;
+
+        const product = await ProductModel.findById(productId);
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        // Update fields
+        if (name) product.name = name;
+        if (price !== undefined) product.price = price;
+        if (image) product.image = image;
+        if (type) product.type = type;
+        if (unit) product.unit = unit;
+        if (minOrderQty !== undefined) product.minOrderQty = minOrderQty;
+        if (piecesPerUnit !== undefined) product.piecesPerUnit = piecesPerUnit;
+        if (variant !== undefined) product.variant = variant;
+        if (brand !== undefined) product.brand = brand;
+        if (description !== undefined) product.description = description;
+        if (stock !== undefined) product.stock = stock;
+        if (oldPrice !== undefined) product.oldPrice = oldPrice;
+
+        await product.save();
+
+        res.status(200).json({
+            message: 'Product updated successfully',
+            product
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 export default {
     adminHome,
     addProduct,
@@ -201,5 +252,7 @@ export default {
     getAllCustomers,
     getUserOrders,
     updateOrderStatus,
-    getAllProducts
+    getAllProducts,
+    getProductById,
+    updateProduct
 };
